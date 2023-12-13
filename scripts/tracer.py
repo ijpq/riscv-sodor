@@ -22,6 +22,8 @@ args = parser.parse_args()
 collecting_stats = False
 start_cycle = 0
 
+n_non_zero_offset_load = 0       # zero offset ld inst
+n_non_zero_offset_store = 0      # zero offset st inst
 n_instructions = 0       # Total instructions retired while collecting_stats == True
 n_arith_instructions = 0 # Total arithmetic instructions retired while collecting_stats == True
 n_ldst_instructions = 0  # Total load/store instructions retired while collecting_stats == True
@@ -133,6 +135,15 @@ for line in args.file:
                     n_misc_instructions += 1
 
                 # TODO: Track more types of instructions here?
+                if inst.opcode in LD_OPCODES:
+                    imm = inst[20:31]
+                    if (imm | 0):
+                        n_non_zero_offset_load += 1
+                if inst.opcode in ST_OPCODES:
+                    imm = inst[25:31] << 5 | inst[7:11]
+                    if (imm | 0):
+                        n_non_zero_offset_store += 1
+
 
                 # Example code showing how to slice some bits out of each Instruction object
                 # Bits 0-6 correspond to the opcode of instructions. Notice that inst[0:6] is 7
@@ -163,6 +174,8 @@ Instruction Breakdown:
 % Ld/St       : {ldst:.3f} %
 % Branch/Jump : {brjmp:.3f} %
 % Misc.       : {misc:.3f} %
+% non_zero_Offset LD  : {non_zero_offset_load:.3f} %
+% non_zero_Offset_ST  : {non_zero_offset_store:.3f} %
 """.format(cpi=n_cycles / n_instructions,
            ipc=n_instructions / n_cycles,
            cycles=n_cycles,
@@ -171,4 +184,7 @@ Instruction Breakdown:
            arith=100 * n_arith_instructions / n_instructions,
            ldst=100 * n_ldst_instructions / n_instructions,
            brjmp=100 * n_brjmp_instructions / n_instructions,
-           misc=100 * n_misc_instructions / n_instructions))
+           misc=100 * n_misc_instructions / n_instructions,
+           non_zero_offset_load=100 * n_non_zero_offset_load / n_instructions,
+           non_zero_offset_store=100 * n_non_zero_offset_store / n_instructions
+           ))
